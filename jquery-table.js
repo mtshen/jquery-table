@@ -6,7 +6,7 @@
  * 参数 rolling 右侧滚动条滚动时触发 {function} 默认 function(){}
  * 参数 MinWidth { string | number } 默认 'auto' 强制table的最小宽度,如果是auto则最小宽度强制100%
  * 参数 adaption { 布尔 } 默认 true 是否自适应宽度
- *
+ * 参数 notOverflow { string } 取值范围 { 'all' 'thead' 'tbody' 'off' }
  * 参数 remove 删除效果
  * 参数 resize 强制刷新
  */
@@ -275,6 +275,21 @@
 			'min-width': option.minWidth
 		});
 
+		switch (option.notOverflow) {
+			case 'thead':
+				conf.thead.css('overflow','hidden');
+				break;
+			case 'tbody':
+				conf.tbody.css('overflow','hidden');
+				break;
+			case 'all' :
+				conf.thead.css('overflow','hidden');
+				conf.tbody.css('overflow','hidden');
+				break;
+			default:
+				break;
+		}
+
 		conf.original.paddingRight = (parseInt(conf._parent.css('padding-right')) || 0);
 		conf._parent.css({
 			'paddingRight': (conf.original.paddingRight + conf.scrollWidth)
@@ -317,7 +332,8 @@
 				minWidth: '100%',
 				time: 100,
 				adaption : true,
-				rolling: function () { }
+				rolling: function () {},
+				notOverflow : 'off'
 			};
 		}
 		option.time = parseInt(option.time >= 0 && option.time || 100);
@@ -325,6 +341,7 @@
 		option.rolling = (option.rolling || function () {});
 		option.minWidth = (option.minWidth || '100%');
 		option.adaption = (option.adaption === undefined && true || option.adaption);
+		option.notOverflow = (option.notOverflow || 'off')
 		return option;
 	};
 
