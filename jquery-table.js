@@ -1,9 +1,19 @@
 /**
  * 轻量级表格滚动条插件 jquery-table v1.0
+ * 参数 border 表格边框宽度 {number} 默认 0
+ * 参数 time 默认刷新时间 {number} 默认 100
+ * 参数 id 强制转换id {string} 默认 ''
+ * 参数 rolling 右侧滚动条滚动时触发 {function} 默认 function(){}
+ * 参数 MinWidth { string | number } 默认 'auto' 强制table的最小宽度,如果是auto则最小宽度强制100%
+ * 参数 adaption { 布尔 } 默认 true 是否自适应宽度
+ *
+ * 参数 remove 删除效果
+ * 参数 resize 强制刷新
  */
 (function ($) {
 	var data = [];
 	var __tag = null;
+	var ifFirefox = navigator.userAgent.indexOf("Firefox") > 0;
 	// 获取dom 获取真实的配置使用 getData(dom)[0].option
 	function getData(elem) {
 		for (var i = 0, len = data.length; i < len; i++) {
@@ -56,6 +66,7 @@
 		var _data = getData(dom)[0].option;
 		_data.scroll.on('scroll', function (e) { // 滚动条事件
 			var _h = -_data.headHeight - parseInt(this.scrollTop);
+			if (ifFirefox && Math.abs(_h) > parseInt(_data.thead.css('height'))) _h -= _data.scrollWidth;
 			_data.tbody.children('table').css('margin-top', _h);
 			_data.option.rolling({
 				scrollTop: parseInt(this.scrollTop),
@@ -76,6 +87,9 @@
 			resize($(this));
 		});
 		window.onmousewheel = document.onmousewheel = _wheels; //IE/Opera/Chrome/Safari
+		if (document.addEventListener) {
+			document.addEventListener('DOMMouseScroll', _wheels, false);
+		}//火狐
 
 		// 滚动
 		_data.thead.parent().on('scroll', function (e) {
@@ -92,8 +106,30 @@
 		var f = scrollFunc(e); // 翻页方向
 		var m = (f ? -18 : 18);
 		var _data = getData(__tag)[0].option;
-		_data.scroll[0].scrollTop += m;
+		var $scrolls = _data.scroll[0];
+		var sTop = $scrolls.scrollTop + m;
+		var w = m < 0 ? parseInt(sTop / 100) * 100 : (parseInt(sTop / 100) + 1) * 100;
+		_wheels_extend(_data, 'wheels_time', function () {
+			var t = (w - $scrolls.scrollTop) * 0.5;
+			if (m < 0) {
+				$scrolls.scrollTop += (t > -5 && -5 || t);
+				$scrolls.scrollTop <= w && clearInterval(_data.wheels_time);
+			} else {
+				$scrolls.scrollTop += (t < 5 && 5 || t);
+				$scrolls.scrollTop >= w && clearInterval(_data.wheels_time);
+			}
+			if ($scrolls.scrollTop == 0 || $scrolls.scrollTop + $scrolls.clientHeight - $scrolls.scrollHeight == 0) {
+				clearInterval(_data.wheels_time);
+			}
+		});
 	};
+
+	// 翻页高度延长20%
+	function _wheels_extend(obj, timer, fn) {
+		obj[timer] && clearInterval(obj[timer]);
+		obj[timer] = setInterval(fn, 50);
+	}
+
 
 	// 刷新图表
 	function resize($dom) {
@@ -114,7 +150,7 @@
 				conf.thead.find('table').html(dom_innerhtml);
 
 				// 重置参数
-				conf.bodyHeight = parseInt(conf.tbody.css('height')) + conf.option.border;
+				conf.bodyHeight = parseInt(conf.tbody.css('height')) + conf.option.border - conf.scrollWidth;
 				conf.headHeight = parseInt(conf.thead.css('height')) - conf.option.border;
 
 				// 重置滚动条
@@ -151,8 +187,16 @@
 			var _in = parseInt(conf.thead.parent().css('height')) - parseInt(conf.thead.css('height'));
 			var _ib = Math.min(_im, _in);
 			parseInt(conf.tbody.css('height')) !== _ib && conf.tbody.css('height', _ib);
+			// 宽
+			var parent_table_w = parseInt(conf.tbody.parent().css('width'));
+			var parent_thead_w = parseInt(conf.thead.css('width'));
+			var parent_tbody_w = parseInt(conf.tbody.css('width'));
+			if( conf.option.adaption && parent_table_w > conf.width){
+				parent_table_w !== parent_thead_w && conf.thead.css('width',parent_table_w - 1);
+				parent_table_w !== parent_tbody_w && conf.tbody.css('width',parent_table_w - 1);
+			}
 		} catch (error) {
-			console.log(error);
+			console.info('jquery-table -> resize() ERROR : ',error);
 		}
 	};
 
@@ -218,17 +262,17 @@
 		conf.thead.css({ // thead样式
 			'width': conf.width,
 			'height': conf.headHeight
-		}).find('table').css('min-width', '100%');
+		}).find('table').css({'min-width': '100%'});
 		conf.thead.find('tbody').css({
 			'visibility': 'hidden'
 		});
 		conf.tbody.css({ // tbody 样式
 			'width': conf.width,
-			'height': parseInt(conf.scroll.css('height')),
+			'height': parseInt(conf.scroll.css('height')) - conf.scrollWidth,
 			'overflow': 'hidden'
 		}).children('table').css({
 			'margin-top': -conf.headHeight,
-			'min-width': '100%'
+			'min-width': option.minWidth
 		});
 
 		conf.original.paddingRight = (parseInt(conf._parent.css('padding-right')) || 0);
@@ -270,15 +314,17 @@
 			return {
 				border: 0, // border
 				id: undefined, // id
+				minWidth: '100%',
 				time: 100,
-				resize: function () { },
+				adaption : true,
 				rolling: function () { }
 			};
 		}
-		option.time = (option.time >= 0 && option.time || 100);
-		option.border = (option.border || 0);
-		option.resize = (option.resize || function () { });
-		option.rolling = (option.rolling || function () { });
+		option.time = parseInt(option.time >= 0 && option.time || 100);
+		option.border = (parseInt(option.border) || 0);
+		option.rolling = (option.rolling || function () {});
+		option.minWidth = (option.minWidth || '100%');
+		option.adaption = (option.adaption === undefined && true || option.adaption);
 		return option;
 	};
 
