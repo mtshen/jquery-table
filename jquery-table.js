@@ -110,7 +110,7 @@
 		var sTop = $scrolls.scrollTop + m;
 		var w = m < 0 ? parseInt(sTop / 100) * 100 : (parseInt(sTop / 100) + 1) * 100;
 		_wheels_extend(_data, 'wheels_time', function () {
-			var t = (w - $scrolls.scrollTop) * 0.5;
+			var t = (w - $scrolls.scrollTop) * 0.7;
 			if (m < 0) {
 				$scrolls.scrollTop += (t > -5 && -5 || t);
 				$scrolls.scrollTop <= w && clearInterval(_data.wheels_time);
