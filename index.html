@@ -18,9 +18,13 @@
             background: #EEE;
             height: 100%;
         }
+        .main .a td {
+            height: 0;
+            border: none;
+        }
     </style>
     <script src="jquery-3.1.1.min.js"></script>
-    <script src="jquery-table.js"></script>
+    <script src="jquery-table2.0 bate.js"></script>
 </head>
 
 <body>
@@ -186,7 +190,7 @@
         </table>
     </div>
     <script>
-            $('table').setTableScroll();
+          createTable({main: '.main'});  
     </script>
 </body>
 

@@ -9,8 +9,10 @@
  * 参数 notOverflow { string } 取值范围 { 'all' 'thead' 'tbody' 'off' }
  * 参数 remove 删除效果
  * 参数 resize 强制刷新
+ * 参数 z 滚动条的zindex
  */
-(function ($) {
+var $setTable = (function ($) {
+	$('head').append('<style type="text/css">._jqueryTable [type=thead] tbody{visibility: hidden;}._jqueryTable [type=thead] tbody td{border:1px solid rgba(0,0,0,0)}</style>');
 	var data = [];
 	var __tag = null;
 	var ifFirefox = navigator.userAgent.indexOf("Firefox") > 0;
@@ -96,6 +98,20 @@
 			this.scrollTop = 0;
 			return false;
 		});
+
+		var old = window.onresize;
+		if (typeof old === 'function') {
+			window.onresize = function (e) {
+				old(e);
+				resize($(dom));
+			}
+		} else {
+			window.onresize = function (e) {
+				resize($(dom));
+			}
+		}
+
+
 	};
 
 	// 翻页
@@ -139,24 +155,18 @@
 			var conf = getData($dom[0])[0].option;
 			var dom_innerhtml = $dom.html();
 			var _innerHtml = conf.innerHTML; // 内存
+			var changeFlag = false;
+			conf.width = parseInt($dom.css('width'));
 
 			// 显示的
 			var old_innerhtml = conf.tbody.find('table').html();
-
-			if (dom_innerhtml != _innerHtml) { // 原始与内存
+			if (dom_innerhtml != _innerHtml) { // 原始与内存	
 				conf.innerHTML = dom_innerhtml;
 				// 图表重新覆盖
 				conf.tbody.find('table').html(dom_innerhtml);
 				conf.thead.find('table').html(dom_innerhtml);
-
-				// 重置参数
-				conf.bodyHeight = parseInt(conf.tbody.css('height')) + conf.option.border - conf.scrollWidth;
-				conf.headHeight = parseInt(conf.thead.css('height')) - conf.option.border;
-
-				// 重置滚动条
-				conf.scroll.children('div').css('height', conf.bodyHeight);
+				changeFlag = true;
 			} else { // 原始 与 $
-
 				var old__headHtml = conf.thead.find('thead').html();
 				var old__bodyHtml = conf.tbody.find('tbody').html();
 
@@ -164,39 +174,67 @@
 				var _head = $dom.find('thead').html();
 				var _tbody = $dom.find('tbody').html();
 				var flag = false;
-
-				var $memory = $(document.createElement('div'));
-				$memory.html(_innerHtml);
-
+				var $memory;
 				if (_head != old__headHtml) { // thead
+					$memory = $(document.createElement('div'));
+					$memory.html(_innerHtml);
 					flag = true;
 					$memory.find('thead').html(old__headHtml);
 					conf.tbody.find('thead').html(old__headHtml);
 				}
 				if (_tbody != old__bodyHtml) { // tbody
+					$memory = $(document.createElement('div'));
+					$memory.html(_innerHtml);
 					flag = true;
 					$memory.find('tbody').html(old__bodyHtml);
 					conf.thead.find('tbody').html(old__bodyHtml);
 				}
+
 				if (flag) {
 					conf.innerHTML = $memory.html();
 					$dom.html($memory.html());
+					changeFlag = true;
 				}
 			}
+
 			var _im = parseInt(conf.tbody.find('tbody').css('height'));
 			var _in = parseInt(conf.thead.parent().css('height')) - parseInt(conf.thead.css('height'));
 			var _ib = Math.min(_im, _in);
 			parseInt(conf.tbody.css('height')) !== _ib && conf.tbody.css('height', _ib);
 			// 宽
-			var parent_table_w = parseInt(conf.tbody.parent().css('width'));
+			var parent_table_w = parseInt(conf.tbody.parent().css('width'), 10);
 			var parent_thead_w = parseInt(conf.thead.css('width'));
 			var parent_tbody_w = parseInt(conf.tbody.css('width'));
-			if( conf.option.adaption && parent_table_w > conf.width){
-				parent_table_w !== parent_thead_w && conf.thead.css('width',parent_table_w - 1);
-				parent_table_w !== parent_tbody_w && conf.tbody.css('width',parent_table_w - 1);
+			var ww = parseInt(conf.tbody.find('table').css('width'));
+
+			if (parent_thead_w > parent_table_w) {
+				conf.thead.css('width', parent_table_w);
+				conf.tbody.css('width', parent_table_w);
+				var ww = parseInt(conf.tbody.find('table').css('width'));
+				if (parent_table_w < ww) {
+					conf.thead.css('width', ww);
+					conf.tbody.css('width', ww);
+				}
+			} else if (parent_thead_w < parent_table_w) {
+				parent_table_w !== parent_thead_w && conf.thead.css('width', parent_table_w);
+				parent_table_w !== parent_tbody_w && conf.tbody.css('width', parent_table_w);
 			}
+
+			if (changeFlag) {
+				// 高度重置
+				conf.headHeight = parseInt(conf.thead.find('thead').css('height'), 10) - conf.option.border + 2;
+				conf.bodyHeight = parseInt(conf.tbody.find('tbody').css('height'), 10) + conf.option.border + 2;
+				conf.thead.css('height', conf.headHeight);
+				conf.tbody.css('height', conf.bodyHeight);
+				conf.scroll.css('top', conf.headHeight);
+				conf.scroll.trigger('scroll');
+				// 重置滚动条
+				conf.scroll.children('div').css('height', conf.bodyHeight - 4);
+			}
+
+			// 如果与table 宽不一致,则进行调整
 		} catch (error) {
-			console.info('jquery-table -> resize() ERROR : ',error);
+			console.info('jquery-table -> resize() ERROR : ', error);
 		}
 	};
 
@@ -222,11 +260,9 @@
 			option: option,
 			times: null
 		};
-
 		conf.original.postion = formatting_dom($dom);
-
 		// 搭建结构
-		var $structure = $('<div type="table"><div type="thead"></div><div type="tbody"></div></div>');
+		var $structure = $('<div type="table" class="_jqueryTable"><div type="thead"></div><div type="tbody"></div></div>');
 		conf.thead = $structure.children('[type=thead]').append($dom.clone());
 		conf.tbody = $structure.children('[type=tbody]').append($dom.clone());
 		conf._parent.append('<div type="scroll"><div></div></div>');
@@ -237,7 +273,7 @@
 			'bottom': 0,
 			'position': 'absolute',
 			'overflow': 'scroll',
-			'zIndex': 10,
+			'zIndex': 9,
 			'right': 0
 		});
 
@@ -260,14 +296,14 @@
 		});
 
 		conf.thead.css({ // thead样式
-			'width': conf.width,
+			'width': conf.width - 17,
 			'height': conf.headHeight
-		}).find('table').css({'min-width': '100%'});
+		}).find('table').css({ 'min-width': '100%' });
 		conf.thead.find('tbody').css({
 			'visibility': 'hidden'
 		});
 		conf.tbody.css({ // tbody 样式
-			'width': conf.width,
+			'width': conf.width - 17,
 			'height': parseInt(conf.scroll.css('height')) - conf.scrollWidth,
 			'overflow': 'hidden'
 		}).children('table').css({
@@ -277,14 +313,14 @@
 
 		switch (option.notOverflow) {
 			case 'thead':
-				conf.thead.css('overflow','hidden');
+				conf.thead.css('overflow', 'hidden');
 				break;
 			case 'tbody':
-				conf.tbody.css('overflow','hidden');
+				conf.tbody.css('overflow', 'hidden');
 				break;
-			case 'all' :
-				conf.thead.css('overflow','hidden');
-				conf.tbody.css('overflow','hidden');
+			case 'all':
+				conf.thead.css('overflow', 'hidden');
+				conf.tbody.css('overflow', 'hidden');
 				break;
 			default:
 				break;
@@ -303,11 +339,17 @@
 		} else {
 			$dom.attr('id', option.id);
 		}
+		$dom.addClass('_table');
 
 		// 定时检查
 		if (option.time) {
-			conf.times = setInterval(function () {
-				resize($dom);
+			conf.__resizeTime = +new Date();
+			conf.times = setInterval(function (e) {
+				var __resizeTime = +new Date();
+				if (__resizeTime - conf.__resizeTime >= option.time) {
+					resize($dom);
+					conf.__resizeTime = __resizeTime;
+				}
 			}, option.time);
 		}
 
@@ -330,18 +372,20 @@
 				border: 0, // border
 				id: undefined, // id
 				minWidth: '100%',
-				time: 100,
-				adaption : true,
-				rolling: function () {},
-				notOverflow : 'off'
+				time: 300,
+				adaption: true,
+				rolling: function () { },
+				notOverflow: 'off'
 			};
 		}
-		option.time = parseInt(option.time >= 0 && option.time || 100);
+
+		option.time = parseInt(option.time !== undefined ? option.time : 300);
 		option.border = (parseInt(option.border) || 0);
-		option.rolling = (option.rolling || function () {});
+		option.rolling = (option.rolling || function () { });
 		option.minWidth = (option.minWidth || '100%');
 		option.adaption = (option.adaption === undefined && true || option.adaption);
 		option.notOverflow = (option.notOverflow || 'off')
+		option.z = option.z || 99999;
 		return option;
 	};
 
@@ -361,6 +405,59 @@
 		} catch (error) { }
 	};
 
+	function chache($dom) {
+		return getData($dom[0])[0].option;
+	};
+
+	function updateTableTbody($dom, option) {
+		var conf = getData($dom[0])[0].option;
+		conf.tbody.find('tbody').html(option.html);
+		conf.thead.find('tbody').html(option.html);
+
+		var _im = parseInt(conf.tbody.find('tbody').css('height'));
+		var _in = parseInt(conf.thead.parent().css('height')) - parseInt(conf.thead.css('height'));
+		var _ib = Math.min(_im, _in);
+		parseInt(conf.tbody.css('height')) !== _ib && conf.tbody.css('height', _ib);
+		// 宽
+		var parent_table_w = parseInt(conf.tbody.parent().css('width'), 10);
+		var parent_thead_w = parseInt(conf.thead.css('width'));
+		var parent_tbody_w = parseInt(conf.tbody.css('width'));
+		var ww = parseInt(conf.tbody.find('table').css('width'));
+
+		if (parent_thead_w > parent_table_w) {
+			conf.thead.css('width', parent_table_w);
+			conf.tbody.css('width', parent_table_w);
+			var ww = parseInt(conf.tbody.find('table').css('width'));
+			if (parent_table_w < ww) {
+				conf.thead.css('width', ww);
+				conf.tbody.css('width', ww);
+			}
+		} else if (parent_thead_w < parent_table_w) {
+			parent_table_w !== parent_thead_w && conf.thead.css('width', parent_table_w);
+			parent_table_w !== parent_tbody_w && conf.tbody.css('width', parent_table_w);
+		}
+
+		// 高度重置
+		conf.headHeight = parseInt(conf.thead.find('thead').css('height'), 10) - conf.option.border;
+		conf.bodyHeight = parseInt(conf.tbody.find('tbody').css('height'), 10) + conf.option.border + 2;
+		conf.thead.css('height', conf.headHeight);
+		conf.tbody.css('height', conf.bodyHeight);
+		conf.scroll.css('top', conf.headHeight);
+		conf.scroll.trigger('scroll');
+		// 重置滚动条
+		conf.scroll.children('div').css('height', conf.bodyHeight - 4);
+	};
+
+	function updateTableThead() {
+
+	};
+	function setScrollValue($dom, option) {
+		try {
+			var conf = chache($dom);
+			conf.scroll[0].scrollTop = option.value;
+		} catch (error) { }
+	};
+
 	// 主入口函数
 	function main($dom, option) {
 		if (typeof option === 'string') {
@@ -372,11 +469,25 @@
 					if (!data || !data[0]) return false;
 					resize($dom);
 					return true;
+				case 'cache':
+					return chache($dom);
 			}
 		} else if (typeof option === 'function') {
 			initTable($dom, {
 				rolling: option
 			});
+		} else if (typeof option === 'object') {
+			switch (option.type) {
+				case 'updateBody':
+					updateTableTbody($dom, option);
+					break;
+				case 'scrollValue':
+					setScrollValue($dom, option);
+					break;
+				default:
+					initTable($dom, option);
+					break;
+			}
 		} else {
 			initTable($dom, option);
 		}
@@ -384,8 +495,12 @@
 	};
 
 	$.fn.setTableScroll = function (option) {
+		if (this.length <= 1) {
+			return main($(this), option);
+		}
 		this.each(function () {
 			main($(this), option);
 		});
 	};
+	return main;
 })(jQuery);
