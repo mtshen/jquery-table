@@ -1,6 +1,28 @@
-var createTable = (function () {
+var createTable = (function() {
     var data = [];
     var scrollWidth = getScrollbarWidth();
+
+    function changeStyle(option) {
+        var oldStyle = document.querySelector('style[loadingStyle]');
+        oldStyle && document.querySelector('head').removeChild(oldStyle);
+        var newStyle = document.createElement('style');
+        option.height || (option.height = '100%');
+        option.background || (option.background = '#fff');
+        newStyle.setAttribute('loadingStyle', '');
+        newStyle.innerHTML =
+            `[table-flag=head]::after {content: "";
+            position: absolute;
+            top: 0;
+            right: -${scrollWidth}px;
+            height: ${option.height}px;
+            background: ${option.background};
+            width: ${scrollWidth}px;}
+            [table-flag=head] td{
+            	border: none !important;
+            }`;
+        document.querySelector('head').appendChild(newStyle);
+    }
+
     // 获取dom 获取真实的配置使用 getData(dom)[0].option
     function getData(elem) {
         for (var i = 0, len = data.length; i < len; i++) {
@@ -21,19 +43,19 @@ var createTable = (function () {
             data[_rtn[1]] = {
                 elem: elem,
                 option: opt
-            }
+            };
         };
     };
 
     // 获取界面滚动条宽度
-	function getScrollbarWidth() {
-		var $box = $('<div style="width :100px;height:80px;overflow:auto;"></div>');
-		$box.appendTo('body').append('<div style="height:200px;"></div>');
-		var scrollbarWidth = $box[0].offsetWidth - $box[0].scrollWidth;
-		$box.remove();
-		return (scrollbarWidth || 17);
-	};
-    
+    function getScrollbarWidth() {
+        var $box = $('<div style="width :100px;height:80px;overflow:auto;"></div>');
+        $box.appendTo('body').append('<div style="height:200px;"></div>');
+        var scrollbarWidth = $box[0].offsetWidth - $box[0].scrollWidth;
+        $box.remove();
+        return (scrollbarWidth || 17);
+    };
+
     // 初始化事件
     function initTable(option) {
         formatting_option(option);
@@ -74,8 +96,11 @@ var createTable = (function () {
             mainElement,
             mainTable,
             tableMain,
-            tableHead
-        }
+            tableHead,
+            mask : {
+                background: option.background
+            }
+        };
 
         setData(mainElement, conf);
 
@@ -87,7 +112,7 @@ var createTable = (function () {
     function onScroll(e) {
         var trig = this.parentNode.querySelector('[table-flag=head]');
         trig.style.marginLeft = -this.scrollLeft + 'px';
-    }
+    };
 
     function update(mainElement) {
         try {
@@ -99,7 +124,10 @@ var createTable = (function () {
         tableHead.innerHTML = '';
         mainTable.style.width = '100%';
         var theadHeight = mainTable.querySelector('thead').offsetHeight + 1;
-
+        changeStyle({
+            background: conf.mask.background,
+            height: theadHeight
+        });
         var newTable = mainTable.cloneNode(true);
         newTable.style.marginTop = 0;
         newTable.querySelector('tbody').style.visibility = 'hidden';
@@ -113,8 +141,9 @@ var createTable = (function () {
 
     //初始化option
     function formatting_option(option = {}) {
-        var {main} = option;
+        var {main, background} = option;
         typeof main === 'string' && (option.main = document.querySelector(main));
+        background || (option.background = '#fff');
     };
 
     function main(option = {}) {
@@ -127,7 +156,33 @@ var createTable = (function () {
                 initTable(option);
                 break;
         }
+
+        setTableWidth();
+
     };
+
+    $(window).on('resize', function() {
+      setTableWidth();
+    });
+
+    function setTableWidth() {
+      var winHeight = $(window).height();
+      var $tableBox = $('[table-flag="main"]');
+      var $table = $tableBox.find('.table-bordered');
+      var tableTop = $table.offset().top;
+      var tableHeight = $table.height();
+      var scrollTop = $tableBox.scrollTop();
+
+      // 出现滚动条
+      if(winHeight > (tableTop + tableHeight + scrollTop + 32))
+      {
+        $tableBox.css('right', '17px');    
+      }
+      // 没有滚动条
+      else {
+        $tableBox.css('right', '0');
+      }
+    }
 
     return main;
 })();
