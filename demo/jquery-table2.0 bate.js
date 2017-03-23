@@ -70,7 +70,7 @@ var createTable = (function() {
             height: ${option.height}px;
             background: ${option.background};
             width: ${scrollWidth}px;}
-            [table-flag=head] tr:nth-child(n + 2) td{
+            [table-flag=head] tr:nth-child(n + 1) td{
             	border-color: rgba(0,0,0,0) !important;
             }`;
         document.querySelector('head').appendChild(newStyle);
@@ -124,8 +124,7 @@ var createTable = (function() {
         if (!mainElement) return;
         if (mainElement.querySelector('[table-flag=main]') &&
             mainElement.querySelector('[table-flag=body]') &&
-            mainElement.querySelector('[table-flag=head]'))
-        {
+            mainElement.querySelector('[table-flag=head]')) {
             update(mainElement);
             return;
         }
@@ -197,6 +196,7 @@ var createTable = (function() {
         try {
             var conf = getData(mainElement)[0].option;
         } catch (error) {
+            instableUpdate(mainElement);
             return false;
         }
         var {mainTable, tableMain, tableHead} = conf;
@@ -258,7 +258,7 @@ var createTable = (function() {
         } else {
             tableHead.style.right = '0px';
             tableHead.classList.add('noscrool');
-        }        
+        }
 
     };
 
@@ -321,20 +321,5 @@ var createTable = (function() {
                 break;
         }
     };
-    
-    jQuery &&
-    (jQuery.fn.createTable = function(option = {}) {
-        var conf = option;
-        if (typeof option === 'string') {
-            option = {
-                type: conf,
-                main: this[0]
-            };
-        } else {
-            option.main || (conf.main = this[0]);
-        }
-        main(option);
-    });
-
     return main;
 })();
