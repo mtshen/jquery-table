@@ -148,7 +148,7 @@ var createTable = (function() {
         tableMain.style.bottom = 0;
         tableMain.style.left = 0;
         tableMain.style.right = 0;
-        tableMain.style.overflow = 'auto';
+        tableMain.style.overflow = 'scroll';
 
         tableHead.style.position = 'absolute';
         tableHead.style.top = 0;
@@ -158,8 +158,10 @@ var createTable = (function() {
         style.bottom = mainElement.style.bottom;
         style.marginTop = mainTable.style.marginTop;
         style.width = mainTable.style.width;
+        style.minWidth = mainTable.style.minWidth;
 
         mainElement.style.overflow = 'hidden';
+        mainTable.style.minWidth = '100%';
 
         tableMain.appendChild(mainTable);
         mainElement.appendChild(tableHead);
@@ -216,14 +218,16 @@ var createTable = (function() {
         mainTable.style.marginTop = (-theadHeight) + 'px';
         tableMain.style.top = theadHeight + 'px';
         tableHead.style.height = theadHeight + 'px';
+
         // 增加滚动条判断
-        if (mainTable.offsetHeight - tableMain.offsetHeight > theadHeight) {
+        // if (mainTable.offsetHeight - tableMain.offsetHeight > theadHeight) {
+        //     console.log(true);
             tableHead.style.right = `${scrollWidth}px`;
             tableHead.classList.remove('noscrool');
-        } else {
-            tableHead.style.right = '0px';
-            tableHead.classList.add('noscrool');
-        }
+        // } else {
+            // tableHead.style.right = '0px';
+            // tableHead.classList.add('noscrool');
+        // }
     };
 
     function instableUpdate(mainElement) {
@@ -252,13 +256,14 @@ var createTable = (function() {
         tableMain.style.top = theadHeight + 'px';
         tableHead.style.height = theadHeight + 'px';
         // 增加滚动条判断
-        if (mainTable.offsetHeight - tableMain.offsetHeight > theadHeight) {
+        // if (mainTable.offsetHeight - tableMain.offsetHeight > theadHeight) {
+        //     console.log(true);
             tableHead.style.right = `${scrollWidth}px`;
             tableHead.classList.remove('noscrool');
-        } else {
-            tableHead.style.right = '0px';
-            tableHead.classList.add('noscrool');
-        }
+        // } else {
+            // tableHead.style.right = '0px';
+            // tableHead.classList.add('noscrool');
+        // }
 
     };
 
@@ -288,6 +293,7 @@ var createTable = (function() {
         parentMain.style.bottom = style.bottom;
         mainTable.style.marginTop = style.marginTop;
         mainTable.style.width = style.width;
+        mainTable.style.minWidth = style.minWidth;
         mainTable.removeAttribute('table-flag');
 
         // 解绑conf
