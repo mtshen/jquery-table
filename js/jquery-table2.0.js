@@ -220,14 +220,23 @@ var createTable = (function() {
         tableHead.style.height = theadHeight + 'px';
 
         // 增加滚动条判断
-        // if (mainTable.offsetHeight - tableMain.offsetHeight > theadHeight) {
-        //     console.log(true);
+        var addScrollFlag = (mainTable.offsetHeight - tableMain.offsetHeight > theadHeight) ||
+        tableMain.offsetWidth < mainTable.offsetWidth;
+
+        if (addScrollFlag) {
             tableHead.style.right = `${scrollWidth}px`;
             tableHead.classList.remove('noscrool');
-        // } else {
-            // tableHead.style.right = '0px';
-            // tableHead.classList.add('noscrool');
-        // }
+            tableMain.style.overflow = 'scroll';
+        } else {
+            tableHead.style.right = '0px';
+            tableHead.classList.add('noscrool');
+            tableMain.style.overflow = 'hidden';
+        }
+
+        mainTable.style.width = '99%';
+        setTimeout(function() {
+            mainTable.style.width = '100%';
+        }, 100);
     };
 
     function instableUpdate(mainElement) {
@@ -255,16 +264,25 @@ var createTable = (function() {
         mainTable.style.marginTop = (-theadHeight) + 'px';
         tableMain.style.top = theadHeight + 'px';
         tableHead.style.height = theadHeight + 'px';
+
         // 增加滚动条判断
-        // if (mainTable.offsetHeight - tableMain.offsetHeight > theadHeight) {
-        //     console.log(true);
+        var addScrollFlag = (mainTable.offsetHeight - tableMain.offsetHeight > theadHeight) ||
+        tableMain.offsetWidth < mainTable.offsetWidth;
+
+        if (addScrollFlag) {
             tableHead.style.right = `${scrollWidth}px`;
             tableHead.classList.remove('noscrool');
-        // } else {
-            // tableHead.style.right = '0px';
-            // tableHead.classList.add('noscrool');
-        // }
-
+            tableMain.style.overflow = 'scroll';
+        } else {
+            tableHead.style.right = '0px';
+            tableHead.classList.add('noscrool');
+            tableMain.style.overflow = 'hidden';
+        }
+        
+        mainTable.style.width = '99%';
+        setTimeout(function() {
+            mainTable.style.width = '100%';
+        }, 100);
     };
 
     function removeTable(mainElement) {
@@ -327,5 +345,6 @@ var createTable = (function() {
                 break;
         }
     };
+
     return main;
 })();
